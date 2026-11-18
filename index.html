@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Minecraft Bedrock パーティクル作成ツール</title>
+  <style>
+    :root {
+      --bg-color: #1e1e1e;
+      --panel-bg: #252526;
+      --border-color: #3c3c3c;
+      --text-color: #d4d4d4;
+      --accent-color: #3a8ee6;
+      --green-btn: #2ea043;
+      --purple-btn: #8957e5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: #181818;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: #121212;
+      position: relative;
+      order: 2;
+    }
+
+    .preview-header {
+      padding: 6px 12px;
+      background-color: rgba(30, 30, 30, 0.85);
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    #previewCanvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .mobile-tabs {
+      display: none;
+      background-color: #181818;
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      border-bottom-color: var(--accent-color);
+      background-color: var(--panel-bg);
+    }
+
+    .controls-panel {
+      width: 360px;
+      background-color: var(--panel-bg);
+      border-right: 1px solid var(--border-color);
+      padding: 16px;
+      overflow-y: auto;
+      order: 1;
+    }
+
+    .output-panel {
+      width: 380px;
+      background-color: var(--panel-bg);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      order: 3;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #9cdcfe;
+      margin-top: 18px;
+      margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title:first-child {
+      margin-top: 0;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      background-color: #3c3c3c;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 6px;
+      background-color: #3c3c3c;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 28px;
+      cursor: pointer;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 38px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row .form-group {
+      flex: 1;
+    }
+
+    .pixel-editor-box {
+      background-color: #1a1a1a;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .pixel-canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    #pixelCanvas {
+      width: 224px;
+      height: 224px;
+      background-image:
+        linear-gradient(45deg, #2b2b2b 25%, transparent 25%),
+        linear-gradient(-45deg, #2b2b2b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #2b2b2b 75%),
+        linear-gradient(-45deg, transparent 75%, #2b2b2b 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-color: #1f1f1f;
+      border: 1px solid #666;
+      image-rendering: pixelated;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .tool-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tool-btn {
+      flex: 1;
+      padding: 6px 8px;
+      background-color: #3c3c3c;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .tool-btn.active {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    .output-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.action-btn {
+      padding: 10px 10px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.82rem;
+      flex: 1;
+      min-width: 95px;
+    }
+
+    .btn-load {
+      background-color: var(--purple-btn);
+    }
+
+    .btn-copy {
+      background-color: var(--accent-color);
+    }
+
+    .btn-download {
+      background-color: var(--green-btn);
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      background-color: #1e1e1e;
+      color: #ce9178;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      resize: none;
+      line-height: 1.4;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--green-btn);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+      }
+
+      .preview-panel {
+        flex: none;
+        height: 32dvh;
+        order: 1;
+      }
+
+      .mobile-tabs {
+        display: flex;
+        order: 2;
+      }
+
+      .controls-panel,
+      .output-panel {
+        width: 100%;
+        flex: 1;
+        border: none;
+        order: 3;
+        display: none;
+      }
+
+      .controls-panel.active-tab {
+        display: block;
+      }
+
+      .output-panel.active-tab {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Bedrock パーティクル作成ツール</h1>
+    <span style="font-size: 0.75rem; color: #888;">v1.10.0</span>
+  </header>
+
+  <div class="main-container">
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span>リアルタイムプレビュー</span>
+        <span id="particle-count">表示中: 0</span>
+      </div>
+      <canvas id="previewCanvas"></canvas>
+    </div>
+
+    <div class="mobile-tabs">
+      <button class="tab-btn active" id="tab-btn-controls" onclick="switchTab('controls')">⚙️ 設定・お絵描き</button>
+      <button class="tab-btn" id="tab-btn-output" onclick="switchTab('output')">📄 JSON出力・保存</button>
+    </div>
+
+    <div class="controls-panel active-tab" id="panel-controls">
+      <div class="section-title">テクスチャ・イラスト設定</div>
+      <div class="form-group">
+        <label>テクスチャのモード</label>
+        <select id="textureMode" onchange="changeTextureMode()">
+          <option value="draw">✏️ カスタムお絵描き (ドット絵)</option>
+          <option value="import">📁 イラスト画像をそのまま使用</option>
+          <option value="none">⬜ 単色スクエア (テクスチャなし)</option>
+        </select>
+      </div>
+
+      <div id="mode-draw-box" class="pixel-editor-box">
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label>キャンバス解像度</label>
+          <select id="canvasResolution" onchange="changeResolution()">
+            <option value="16" selected>16 × 16 (標準)</option>
+            <option value="32">32 × 32 (高精細)</option>
+            <option value="64">64 × 64 (HD)</option>
+            <option value="128">128 × 128 (超高精細)</option>
+          </select>
+        </div>
+
+        <div class="tool-bar">
+          <button type="button" class="tool-btn active" id="tool-pen" onclick="setDrawTool('pen')">✏️ ペン</button>
+          <button type="button" class="tool-btn" id="tool-eraser" onclick="setDrawTool('eraser')">🧽 消しゴム</button>
+          <button type="button" class="tool-btn" onclick="clearPixelCanvas()">🗑️ 全消去</button>
+        </div>
+
+        <div class="row" style="align-items: center;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>ペン色</label>
+            <input type="color" id="drawColor" value="#ffffff">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>ペン太さ: <span id="val-brushSize">1</span>px</label>
+            <input type="range" id="brushSize" min="1" max="8" value="1" oninput="document.getElementById('val-brushSize').textContent=this.value">
+          </div>
+        </div>
+
+        <div class="pixel-canvas-wrapper">
+          <canvas id="pixelCanvas" width="16" height="16"></canvas>
+        </div>
+
+        <div class="row" style="gap: 8px;">
+          <input type="file" id="loadToCanvasInput" accept="image/*" style="display: none;" onchange="loadImageToPixelCanvas(event)">
+          <button type="button" class="action-btn btn-load" onclick="document.getElementById('loadToCanvasInput').click()">📂 画像を読込</button>
+          <button type="button" class="action-btn btn-download" onclick="downloadTexturePNG()">🖼️ .png保存</button>
+        </div>
+      </div>
+
+      <div id="mode-import-box" class="pixel-editor-box" style="display: none;">
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label>画像ファイルを選択 (PNG / JPG / GIF)</label>
+          <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+        </div>
+        <p id="imported-info" style="font-size: 0.75rem; color: #aaa;">※画像を読み込むとUVサイズが自動設定されます</p>
+      </div>
+
+      <div class="section-title">基本設定 (Description)</div>
+      <div class="form-group">
+        <label>識別子 (Identifier)</label>
+        <input type="text" id="identifier" value="custom:my_particle">
+      </div>
+      <div class="form-group">
+        <label>テクスチャパス (リソースパック内)</label>
+        <input type="text" id="texture" value="textures/particle/custom_particle">
+      </div>
+      <div class="form-group">
+        <label>マテリアル</label>
+        <select id="material">
+          <option value="particles_alpha">particles_alpha (標準・透過)</option>
+          <option value="particles_blend">particles_blend (半透明ブレンド)</option>
+          <option value="particles_add">particles_add (加算・発光風)</option>
+        </select>
+      </div>
+
+      <div class="section-title">放出設定 (Emitter)</div>
+      <div class="form-group">
+        <label>放出レート (個/秒) <span id="val-rate">20</span></label>
+        <input type="range" id="rate" min="1" max="100" value="20">
+      </div>
+      <div class="form-group">
+        <label>最大パーティクル数 <span id="val-max">100</span></label>
+        <input type="range" id="maxParticles" min="10" max="500" step="10" value="100">
+      </div>
+      <div class="form-group">
+        <label>放出範囲の広がり (半径) <span id="val-spread">0.5</span></label>
+        <input type="range" id="spread" min="0" max="5" step="0.1" value="0.5">
+      </div>
+
+      <div class="section-title">寿命と動き (Lifetime & Motion)</div>
+      <div class="form-group">
+        <label>パーティクルの寿命 (秒) <span id="val-lifetime">1.5</span></label>
+        <input type="range" id="lifetime" min="0.1" max="10" step="0.1" value="1.5">
+      </div>
+      <div class="form-group">
+        <label>初速度 (Speed) <span id="val-speed">2.0</span></label>
+        <input type="range" id="speed" min="0" max="15" step="0.5" value="2.0">
+      </div>
+      <div class="form-group">
+        <label>重力 / Y軸加速度 <span id="val-gravity">-1.0</span></label>
+        <input type="range" id="gravity" min="-10" max="10" step="0.5" value="-1.0">
+      </div>
+
+      <div class="section-title">見た目・色変化 (Appearance)</div>
+      <div class="form-group">
+        <label>サイズ (ブロック比率) <span id="val-size">0.25</span></label>
+        <input type="range" id="size" min="0.05" max="1.5" step="0.05" value="0.25">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>開始色 (乗算)</label>
+          <input type="color" id="colorStart" value="#ffffff">
+        </div>
+        <div class="form-group">
+          <label>終了色 (乗算)</label>
+          <input type="color" id="colorEnd" value="#ffaa00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>フェードアウト (透明度変化)</label>
+        <select id="fadeOut">
+          <option value="true">あり (徐々に消える)</option>
+          <option value="false">なし (くっきり消える)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="output-panel" id="panel-output">
+      <div class="section-title" style="margin-top:0;">生成されたJSONコード</div>
+      <div class="output-actions">
+        <input type="file" id="loadJsonInput" accept=".json,application/json" style="display: none;" onchange="loadParticleJSON(event)">
+        <button class="action-btn btn-load" onclick="document.getElementById('loadJsonInput').click()">📂 .json読込</button>
+        <button class="action-btn btn-copy" onclick="copyJSON()">📋 コピー</button>
+        <button class="action-btn btn-download" onclick="downloadJSON()">💾 .json保存</button>
+      </div>
+      <textarea id="jsonOutput" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">完了しました！</div>
+  <script>
+    var texWidth = 16;
+    var texHeight = 16;
+    var importedImage = null;
+    var drawTool = 'pen';
+    var isDrawing = false;
+
+    function switchTab(tabName) {
+      var controlsPanel = document.getElementById('panel-controls');
+      var outputPanel = document.getElementById('panel-output');
+      var btnControls = document.getElementById('tab-btn-controls');
+      var btnOutput = document.getElementById('tab-btn-output');
+
+      if (tabName === 'controls') {
+        controlsPanel.classList.add('active-tab');
+        outputPanel.classList.remove('active-tab');
+        btnControls.classList.add('active');
+        btnOutput.classList.remove('active');
+      } else {
+        controlsPanel.classList.remove('active-tab');
+        outputPanel.classList.add('active-tab');
+        btnControls.classList.remove('active');
+        btnOutput.classList.add('active');
+      }
+    }
+
+    var pixelCanvas = document.getElementById('pixelCanvas');
+    var pCtx = pixelCanvas.getContext('2d');
+
+    function initDefaultStar() {
+      var res = Number(document.getElementById('canvasResolution').value);
+      pCtx.clearRect(0, 0, res, res);
+      pCtx.fillStyle = '#ffffff';
+      var mid = Math.floor(res / 2);
+      var r = Math.max(1, Math.floor(res / 8));
+      pCtx.fillRect(mid - r, mid - r * 3, r * 2, r * 6);
+      pCtx.fillRect(mid - r * 3, mid - r, r * 6, r * 2);
+    }
+
+    function changeTextureMode() {
+      var mode = document.getElementById('textureMode').value;
+      document.getElementById('mode-draw-box').style.display = (mode === 'draw') ? 'block' : 'none';
+      document.getElementById('mode-import-box').style.display = (mode === 'import') ? 'block' : 'none';
+
+      if (mode === 'draw') {
+        var res = Number(document.getElementById('canvasResolution').value);
+        texWidth = res;
+        texHeight = res;
+      } else if (mode === 'import' && importedImage) {
+        texWidth = importedImage.width;
+        texHeight = importedImage.height;
+      } else {
+        texWidth = 16;
+        texHeight = 16;
+      }
+      updateAll();
+    }
+
+    function changeResolution() {
+      var res = Number(document.getElementById('canvasResolution').value);
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = pixelCanvas.width;
+      tempCanvas.height = pixelCanvas.height;
+      tempCanvas.getContext('2d').drawImage(pixelCanvas, 0, 0);
+
+      pixelCanvas.width = res;
+      pixelCanvas.height = res;
+      pCtx.imageSmoothingEnabled = false;
+      pCtx.drawImage(tempCanvas, 0, 0, res, res);
+
+      texWidth = res;
+      texHeight = res;
+      updateAll();
+    }
+
+    function setDrawTool(tool) {
+      drawTool = tool;
+      document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
+      document.getElementById('tool-eraser').classList.toggle('active', tool === 'eraser');
+    }
+
+    function clearPixelCanvas() {
+      pCtx.clearRect(0, 0, pixelCanvas.width, pixelCanvas.height);
+    }
+
+    function getCanvasCoords(e) {
+      var rect = pixelCanvas.getBoundingClientRect();
+      var touch = (e.touches && e.touches.length > 0) ? e.touches.item(0) : null;
+      var clientX = touch ? touch.clientX : e.clientX;
+      var clientY = touch ? touch.clientY : e.clientY;
+      var x = Math.floor(((clientX - rect.left) / rect.width) * pixelCanvas.width);
+      var y = Math.floor(((clientY - rect.top) / rect.height) * pixelCanvas.height);
+      return { x: x, y: y };
+    }
+
+    function drawAt(e) {
+      if (!isDrawing) return;
+      if (e.cancelable) e.preventDefault();
+      var pos = getCanvasCoords(e);
+      var size = Number(document.getElementById('brushSize').value);
+      var offset = Math.floor(size / 2);
+
+      if (drawTool === 'pen') {
+        pCtx.fillStyle = document.getElementById('drawColor').value;
+        pCtx.fillRect(pos.x - offset, pos.y - offset, size, size);
+      } else {
+        pCtx.clearRect(pos.x - offset, pos.y - offset, size, size);
+      }
+    }
+
+    pixelCanvas.addEventListener('mousedown', function(e) { isDrawing = true; drawAt(e); });
+    pixelCanvas.addEventListener('mousemove', drawAt);
+    window.addEventListener('mouseup', function() { isDrawing = false; });
+
+    pixelCanvas.addEventListener('touchstart', function(e) { isDrawing = true; drawAt(e); }, { passive: false });
+    pixelCanvas.addEventListener('touchmove', drawAt, { passive: false });
+    window.addEventListener('touchend', function() { isDrawing = false; });
+
+    function loadImageToPixelCanvas(event) {
+      var file = event.target.files.item(0);
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var validSizes = new Array(16, 32, 64, 128);
+          var resSelect = document.getElementById('canvasResolution');
+          var targetRes = Number(resSelect.value);
+
+          if (validSizes.indexOf(img.width) !== -1 && img.width === img.height) {
+            targetRes = img.width;
+            resSelect.value = String(targetRes);
+          }
+
+          pixelCanvas.width = targetRes;
+          pixelCanvas.height = targetRes;
+          pCtx.clearRect(0, 0, targetRes, targetRes);
+          pCtx.imageSmoothingEnabled = false;
+          pCtx.drawImage(img, 0, 0, targetRes, targetRes);
+
+          texWidth = targetRes;
+          texHeight = targetRes;
+          updateAll();
+          showToast('キャンバス(' + targetRes + '×' + targetRes + ')に読込完了！');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    function downloadTexturePNG() {
+      var url = pixelCanvas.toDataURL('image/png');
+      var a = document.createElement('a');
+      var texPath = document.getElementById('texture').value || 'custom_particle';
+      var baseName = texPath.split('/').pop() || 'custom_particle';
+      a.href = url;
+      a.download = baseName + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('テクスチャ画像を保存しました！');
+    }
+
+    function handleImageUpload(event) {
+      var file = event.target.files.item(0);
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          importedImage = img;
+          texWidth = img.width;
+          texHeight = img.height;
+          document.getElementById('imported-info').textContent =
+            '読み込み完了: ' + file.name + ' (' + texWidth + ' × ' + texHeight + 'px)';
+          updateAll();
+          showToast('イラストを読み込みました！');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    var inputs = [
+      'identifier', 'texture', 'material',
+      'rate', 'maxParticles', 'spread',
+      'lifetime', 'speed', 'gravity',
+      'size', 'colorStart', 'colorEnd', 'fadeOut'
+    ];
+
+    var elements = {};
+    for (var i = 0; i < inputs.length; i++) {
+      var id = inputs.slice(i, i + 1).join('');
+      elements[id] = document.getElementById(id);
+      elements[id].addEventListener('input', updateAll);
+    }
+
+    function hexToRgbaArray(hex, alpha) {
+      if (alpha === undefined) alpha = 1.0;
+      var r = parseInt(hex.slice(1, 3), 16) / 255;
+      var g = parseInt(hex.slice(3, 5), 16) / 255;
+      var b = parseInt(hex.slice(5, 7), 16) / 255;
+      return [
+        Number(r.toFixed(3)),
+        Number(g.toFixed(3)),
+        Number(b.toFixed(3)),
+        alpha
+      ];
+    }
+
+    function rgbaArrayToHex(arr) {
+      if (!Array.isArray(arr) || arr.length < 3) return '#ffffff';
+      var toHex = function(v) {
+        return Math.max(0, Math.min(255, Math.round(v * 255))).toString(16).padStart(2, '0');
+      };
+      var rHex = toHex(arr.slice(0, 1).pop());
+      var gHex = toHex(arr.slice(1, 2).pop());
+      var bHex = toHex(arr.slice(2, 3).pop());
+      return '#' + rHex + gHex + bHex;
+    }
+
+    function hexToRgb(hex) {
+      return {
+        r: parseInt(hex.slice(1, 3), 16),
+        g: parseInt(hex.slice(3, 5), 16),
+        b: parseInt(hex.slice(5, 7), 16)
+      };
+    }
+
+    function updateAll() {
+      document.getElementById('val-rate').textContent = elements.rate.value;
+      document.getElementById('val-max').textContent = elements.maxParticles.value;
+      document.getElementById('val-spread').textContent = elements.spread.value;
+      document.getElementById('val-lifetime').textContent = elements.lifetime.value;
+      document.getElementById('val-speed').textContent = elements.speed.value;
+      document.getElementById('val-gravity').textContent = elements.gravity.value;
+      document.getElementById('val-size').textContent = elements.size.value;
+
+      var startColor = hexToRgbaArray(elements.colorStart.value, 1.0);
+      var endAlpha = elements.fadeOut.value === 'true' ? 0.0 : 1.0;
+      var endColor = hexToRgbaArray(elements.colorEnd.value, endAlpha);
+
+      var zeroVec = new Array(3).fill(0);
+      var uvOrigin = new Array(2).fill(0);
+      var uvSize = [texWidth, texHeight];
+
+      var particleJson = {
+        "format_version": "1.10.0",
+        "particle_effect": {
+          "description": {
+            "identifier": elements.identifier.value || "custom:particle",
+            "basic_render_parameters": {
+              "material": elements.material.value,
+              "texture": elements.texture.value
+            }
+          },
+          "components": {
+            "minecraft:emitter_rate_steady": {
+              "spawn_rate": Number(elements.rate.value),
+              "max_particles": Number(elements.maxParticles.value)
+            },
+            "minecraft:emitter_lifetime_looping": {
+              "active_time": 1
+            },
+            "minecraft:emitter_shape_sphere": {
+              "offset": zeroVec,
+              "radius": Number(elements.spread.value),
+              "direction": "outwards"
+            },
+            "minecraft:particle_lifetime_expression": {
+              "max_lifetime": Number(elements.lifetime.value)
+            },
+            "minecraft:particle_initial_speed": Number(elements.speed.value),
+            "minecraft:particle_motion_dynamic": {
+              "linear_acceleration": [0, Number(elements.gravity.value), 0]
+            },
+            "minecraft:particle_appearance_billboard": {
+              "size": [Number(elements.size.value), Number(elements.size.value)],
+              "facing_camera_mode": "rotate_xyz",
+              "uv": {
+                "texture_width": texWidth,
+                "texture_height": texHeight,
+                "uv": uvOrigin,
+                "uv_size": uvSize
+              }
+            },
+            "minecraft:particle_appearance_tinting": {
+              "color": {
+                "interpolant": "v.particle_age / v.particle_lifetime",
+                "gradient": {
+                  "0.0": startColor,
+                  "1.0": endColor
+                }
+              }
+            }
+          }
+        }
+      };
+
+      document.getElementById('jsonOutput').value = JSON.stringify(particleJson, null, 2);
+    }
+
+    function loadParticleJSON(event) {
+      var file = event.target.files.item(0);
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var data = JSON.parse(e.target.result);
+          var effect = data.particle_effect;
+          if (!effect) throw new Error('Invalid format');
+
+          var desc = effect.description || {};
+          if (desc.identifier) elements.identifier.value = desc.identifier;
+          var params = desc.basic_render_parameters || {};
+          if (params.texture) elements.texture.value = params.texture;
+          if (params.material) elements.material.value = params.material;
+
+          var comp = effect.components || {};
+          if (comp['minecraft:emitter_rate_steady']) {
+            elements.rate.value = comp['minecraft:emitter_rate_steady'].spawn_rate || 20;
+            elements.maxParticles.value = comp['minecraft:emitter_rate_steady'].max_particles || 100;
+          }
+          if (comp['minecraft:emitter_shape_sphere']) {
+            elements.spread.value = comp['minecraft:emitter_shape_sphere'].radius !== undefined ? comp['minecraft:emitter_shape_sphere'].radius : 0.5;
+          }
+          if (comp['minecraft:particle_lifetime_expression']) {
+            elements.lifetime.value = comp['minecraft:particle_lifetime_expression'].max_lifetime || 1.5;
+          }
+          if (typeof comp['minecraft:particle_initial_speed'] === 'number') {
+            elements.speed.value = comp['minecraft:particle_initial_speed'];
+          }
+          if (comp['minecraft:particle_motion_dynamic'] && Array.isArray(comp['minecraft:particle_motion_dynamic'].linear_acceleration)) {
+            var acc = comp['minecraft:particle_motion_dynamic'].linear_acceleration;
+            elements.gravity.value = acc.slice(1, 2).pop();
+          }
+          if (comp['minecraft:particle_appearance_billboard']) {
+            var bb = comp['minecraft:particle_appearance_billboard'];
+            if (Array.isArray(bb.size)) elements.size.value = bb.size.slice(0, 1).pop() || 0.25;
+            if (bb.uv && bb.uv.texture_width) {
+              texWidth = bb.uv.texture_width;
+              texHeight = bb.uv.texture_height || texWidth;
+            }
+          }
+          if (comp['minecraft:particle_appearance_tinting'] && comp['minecraft:particle_appearance_tinting'].color) {
+            var grad = comp['minecraft:particle_appearance_tinting'].color.gradient;
+            if (grad && grad['0.0']) elements.colorStart.value = rgbaArrayToHex(grad['0.0']);
+            if (grad && grad['1.0']) {
+              elements.colorEnd.value = rgbaArrayToHex(grad['1.0']);
+              elements.fadeOut.value = (grad['1.0'].slice(3, 4).pop() === 0) ? 'true' : 'false';
+            }
+          }
+
+          updateAll();
+          showToast('JSONを読み込みました！');
+        } catch (err) {
+          showToast('JSONの読み込みに失敗しました');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function copyJSON() {
+      var textarea = document.getElementById('jsonOutput');
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textarea.value);
+      } else {
+        document.execCommand('copy');
+      }
+      showToast('JSONをコピーしました！');
+    }
+
+    function downloadJSON() {
+      var text = document.getElementById('jsonOutput').value;
+      var rawId = elements.identifier.value || 'particle';
+      var idParts = rawId.split(':');
+      var baseName = idParts.length > 1 ? idParts.slice(1, 2).pop() : idParts.slice(0, 1).pop();
+      var fileName = (baseName || 'particle') + '.json';
+
+      var blob = new Blob([text], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    function showToast(msg) {
+      var toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 2500);
+    }
+
+    var canvas = document.getElementById('previewCanvas');
+    var ctx = canvas.getContext('2d');
+    var tintCanvas = document.createElement('canvas');
+    var tintCtx = tintCanvas.getContext('2d');
+
+    var particles = [];
+    var lastTime = performance.now();
+    var spawnAccumulator = 0;
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function Particle(centerX, centerY) {
+      var spreadPx = Number(elements.spread.value) * 35;
+      var angle = Math.random() * Math.PI * 2;
+      var dist = Math.random() * spreadPx;
+
+      this.x = centerX + Math.cos(angle) * dist;
+      this.y = centerY + Math.sin(angle) * dist;
+
+      var speedPx = Number(elements.speed.value) * 35;
+      this.vx = Math.cos(angle) * speedPx;
+      this.vy = Math.sin(angle) * speedPx;
+
+      this.age = 0;
+      this.lifetime = Number(elements.lifetime.value);
+    }
+
+    Particle.prototype.update = function(dt) {
+      this.age += dt;
+      var gravityPx = -Number(elements.gravity.value) * 35;
+      this.vy += gravityPx * dt;
+
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+    };
+
+    Particle.prototype.draw = function(ctx) {
+      var progress = Math.min(this.age / this.lifetime, 1.0);
+      var c1 = hexToRgb(elements.colorStart.value);
+      var c2 = hexToRgb(elements.colorEnd.value);
+
+      var r = Math.round(c1.r + (c2.r - c1.r) * progress);
+      var g = Math.round(c1.g + (c2.g - c1.g) * progress);
+      var b = Math.round(c1.b + (c2.b - c1.b) * progress);
+      var alpha = elements.fadeOut.value === 'true' ? (1.0 - progress) : 1.0;
+
+      var sizePx = Math.max(2, Number(elements.size.value) * 35);
+      var mode = document.getElementById('textureMode').value;
+
+      var sourceImg = null;
+      if (mode === 'draw') {
+        sourceImg = pixelCanvas;
+      } else if (mode === 'import' && importedImage) {
+        sourceImg = importedImage;
+      }
+
+      if (sourceImg) {
+        tintCanvas.width = sourceImg.width;
+        tintCanvas.height = sourceImg.height;
+        tintCtx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
+        tintCtx.drawImage(sourceImg, 0, 0);
+
+        tintCtx.globalCompositeOperation = 'multiply';
+        tintCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        tintCtx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+
+        tintCtx.globalCompositeOperation = 'destination-in';
+        tintCtx.drawImage(sourceImg, 0, 0);
+        tintCtx.globalCompositeOperation = 'source-over';
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.imageSmoothingEnabled = (mode === 'import');
+        ctx.drawImage(tintCanvas, this.x - sizePx / 2, this.y - sizePx / 2, sizePx, sizePx);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+        ctx.fillRect(this.x - sizePx / 2, this.y - sizePx / 2, sizePx, sizePx);
+      }
+    };
+
+    function animate(now) {
+      var dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      ctx.fillStyle = '#121212';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      var centerX = canvas.width / 2;
+      var centerY = canvas.height / 2;
+
+      ctx.strokeStyle = '#2a2a2a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, canvas.height);
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(canvas.width, centerY);
+      ctx.stroke();
+
+      var rate = Number(elements.rate.value);
+      var maxP = Number(elements.maxParticles.value);
+      spawnAccumulator += rate * dt;
+
+      while (spawnAccumulator >= 1) {
+        if (particles.length < maxP) {
+          particles.push(new Particle(centerX, centerY));
+        }
+        spawnAccumulator -= 1;
+      }
+
+      if (elements.material.value === 'particles_add') {
+        ctx.globalCompositeOperation = 'lighter';
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles.slice(i, i + 1).pop();
+        p.update(dt);
+        if (p.age >= p.lifetime) {
+          particles.splice(i, 1);
+        } else {
+          p.draw(ctx);
+        }
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      document.getElementById('particle-count').textContent = '表示中: ' + particles.length;
+
+      requestAnimationFrame(animate);
+    }
+
+    initDefaultStar();
+    updateAll();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
